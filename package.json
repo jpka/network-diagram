@@ -1,0 +1,36 @@
+{
+    "name": "diagram",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/diagram-layer3.js",
+    "scripts": {
+        "build": "webpack --mode=development",
+        "prod": "webpack --mode=production",
+        "serve": "webpack serve --mode=development",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "module": "src/index.js",
+    "devDependencies": {
+        "d3": "^7.9.0",
+        "d3-drag": "^3.0.0",
+        "d3-ease": "^3.0.1",
+        "d3-fetch": "^3.0.1",
+        "d3-force": "^3.0.0",
+        "d3-polygon": "^3.0.1",
+        "d3-quadtree": "^3.0.1",
+        "d3-scale": "^4.0.2",
+        "d3-selection": "^3.0.0",
+        "d3-zoom": "^3.0.0",
+        "esbuild-loader": "^4.4.0",
+        "eslint": "^9.39.1",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-webpack-plugin": "^5.0.2",
+        "webpack": "^5.102.1",
+        "webpack-cli": "^6.0.1",
+        "webpack-dev-server": "^5.2.3"
+    }
+}
