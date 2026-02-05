@@ -129,13 +129,7 @@ function create (diagram) {
             <input type="checkbox">
             <label class="label">Grouping</label>
         </div>
-        <div>
-            <div style="display: flex">
-                <input type="checkbox" id="sound_check">
-                <label for="sound_check" style="margin-bottom: 0; margin-left: 5px;">Sound</label>
-            </div>
-            <audio id="downAudio" src="assets/sounds/down.mp3"></audio>
-        </div>`
+        <audio id="downAudio" src="assets/sounds/down.mp3"></audio>`
 
     const searchFormInput = toolbar.querySelector('.search-form input')
 

@@ -350,8 +350,117 @@ function init (diagram) {
     })
 }
 
+function hideUnconnectedSubnets (diagram) {
+    const data = diagram.data
+    const config = diagram.config
+
+    // Find connected subnets (those with edges to devices)
+    const connectedSubnets = new Set()
+    data.edges.forEach(edge => {
+        const source = edge.source
+        const target = edge.target
+        if (source.isCloud && !target.isCloud) {
+            connectedSubnets.add(source.id)
+        } else if (!source.isCloud && target.isCloud) {
+            connectedSubnets.add(target.id)
+        }
+    })
+
+    // Remove unconnected subnets from config
+    data.subnets.forEach(subnet => {
+        if (!connectedSubnets.has(subnet.id)) {
+            config.subnets.delete(subnet.id)
+        }
+    })
+
+    Configs.storeConfig(diagram)
+    Layers.refreshLayer(diagram)
+}
+
+function restoreAllSubnets (diagram) {
+    const data = diagram.data
+    const config = diagram.config
+
+    // Restore all subnets to the config
+    data.subnets.forEach(subnet => {
+        config.subnets.add(subnet.id)
+    })
+
+    Configs.storeConfig(diagram)
+    Layers.refreshLayer(diagram)
+}
+
+function showOptionsModal (diagram) {
+    let modal = document.querySelector('.options-modal-container')
+    if (!modal) {
+        modal = document.createElement('dialog')
+        modal.classList.add('options-modal-container')
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="options-modal-header">
+                    <span class="options-close">&times;</span>
+                    <div class="title">Options</div>
+                </div>
+                <div class="options-modal-body">
+                    <div>
+                        <input type="checkbox" id="sound_check">
+                        <label for="sound_check" style="margin-bottom: 0; margin-left: 5px;">Sound</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="hide_unconnected_subnets">
+                        <label for="hide_unconnected_subnets" style="margin-bottom: 0; margin-left: 5px;">Don't show unconnected subnets</label>
+                    </div>
+                </div>
+                <div class="options-modal-footer">
+                    <button class="action options-confirm">Ok</button>
+                </div>
+            </div>`
+        document.body.appendChild(modal)
+
+        const span = modal.querySelector('.options-close')
+        span.addEventListener('click', () => {
+            modal.close()
+        })
+
+        const confirmBtn = modal.querySelector('.options-confirm')
+        confirmBtn.addEventListener('click', () => {
+            const soundEnabled = modal.querySelector('#sound_check').checked
+            const hideUnconnected = modal.querySelector('#hide_unconnected_subnets').checked
+
+            // Update config with current checkbox states
+            diagram.config.sound = soundEnabled
+            diagram.config.hideUnconnectedSubnets = hideUnconnected
+
+            // Apply hide/restore logic based on checkbox
+            if (hideUnconnected) {
+                hideUnconnectedSubnets(diagram)
+            } else {
+                // Restore all subnets when checkbox is unchecked
+                restoreAllSubnets(diagram)
+            }
+
+            // Persist config to localStorage
+            Configs.storeConfig(diagram)
+
+            modal.close()
+        })
+    }
+
+    // Set checkbox states from current config when opening dialog
+    const soundCheck = modal.querySelector('#sound_check')
+    const hideUnconnectedCheck = modal.querySelector('#hide_unconnected_subnets')
+
+    soundCheck.checked = diagram.config.sound !== undefined ? diagram.config.sound : true
+    hideUnconnectedCheck.checked = diagram.config.hideUnconnectedSubnets !== undefined ? diagram.config.hideUnconnectedSubnets : false
+
+    modal.showModal()
+}
+
 export const Panels = {
     showSettingModal,
+    showOptionsModal,
+    hideUnconnectedSubnets,
+    restoreAllSubnets,
     remove_group,
     init,
     remove_node,
