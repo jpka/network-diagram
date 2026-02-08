@@ -24,7 +24,11 @@ function create (diagram) {
     //     <input type="range" id="cowbell" name="cowbell" min="0" max="100" value="90" step="5">
     // `
 
-    sliderbar.innerHTML = '<button type="button" class="btn-link edit-elements-button">Edit Elements</button>'
+    sliderbar.innerHTML = '<button type="button" class="btn-link options-button">Options</button><button type="button" class="btn-link edit-elements-button">Edit Elements</button>'
+
+    sliderbar.querySelector('.options-button').addEventListener('click', () => {
+        Panels.showOptionsModal(diagram)
+    })
 
     sliderbar.querySelector('.edit-elements-button').addEventListener('click', () => {
         Panels.showSettingModal(diagram)

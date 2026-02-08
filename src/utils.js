@@ -66,7 +66,7 @@ export function cleanEventListeners ({ docEventListeners }) {
 }
 
 export function inInteractMode (event) {
-    return event.shiftKey || event.sourceEvent?.shiftKey
+    return !!(event.shiftKey || event.sourceEvent?.shiftKey)
 }
 
 export function haveIntersection ({ settings }, r1, r2) {

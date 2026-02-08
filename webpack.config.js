@@ -76,10 +76,10 @@ export default {
         //     'process.env.NODE_ENV': JSON.stringify(NODE_ENV),
         // }),
 
-        new ESLintPlugin({
-            configType: 'flat',
-            extensions: ['js', 'cjs', 'mjs'],
-        }),
+        // new ESLintPlugin({
+        //     configType: 'flat',
+        //     extensions: ['js', 'cjs', 'mjs'],
+        // }),
     ],
 
     optimization: {

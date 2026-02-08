@@ -10,6 +10,9 @@ function createDefaultConfig (diagram) {
         groups: new Set(),
         devices: new Set(),
         subnets: new Set(),
+        // Options dialog settings
+        sound: true,                    // Sound alerts enabled by default
+        hideUnconnectedSubnets: false,  // Don't hide unconnected subnets by default
     }
 }
 function saveConfig (diagram, config) {
@@ -67,6 +70,14 @@ function storeConfig (diagram) {
     const updatedConfig = diagram.config
     updatedConfig.floatMode = diagram.settings.floatMode
 
+    // Ensure options settings are included
+    if (updatedConfig.sound !== undefined) {
+        config.sound = updatedConfig.sound
+    }
+    if (updatedConfig.hideUnconnectedSubnets !== undefined) {
+        config.hideUnconnectedSubnets = updatedConfig.hideUnconnectedSubnets
+    }
+
     if (config !== updatedConfig) {
         Object.assign(config, updatedConfig)
     }
@@ -78,6 +89,10 @@ function init (diagram) {
     Store.purge(diagram)
     diagram.config = getConfig(diagram)
     diagram.settings.floatMode = diagram.config.floatMode
+
+    // Set options settings from config (with defaults if not present)
+    diagram.config.sound = diagram.config.sound !== undefined ? diagram.config.sound : true
+    diagram.config.hideUnconnectedSubnets = diagram.config.hideUnconnectedSubnets !== undefined ? diagram.config.hideUnconnectedSubnets : false
 }
 
 function selectConfig (diagram) {

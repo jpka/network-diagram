@@ -567,7 +567,7 @@ function getLinkWidth (w) {
         [50000000000, 8],
         [100000000000, 9],
         [Infinity, 10],
-    ].find(([limit]) => w < limit)[1]
+    ].find(([limit]) => w <= limit)[1]
 }
 
 function teardown () {
