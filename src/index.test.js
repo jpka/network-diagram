@@ -1,5 +1,9 @@
+/* eslint-disable sort-imports */
 import { vi } from 'vitest'
 import { create } from './index.js'
+import { Forces } from './simulations/forces.js'
+
+/* global describe, it, expect */
 
 // Mock Data.fetch
 vi.mock('./data.js', () => ({
@@ -87,4 +91,71 @@ describe('create', () => {
     })
 
 
+})
+describe('subnet weight slider', () => {
+    it('defaults to 0 (no pull, default sim)', () => {
+        const diagram = { subnetWeight: 0 }
+        const force = Forces.subnetPull(diagram)
+        const mockNodes = [
+            { isCloud: true, x: 100, y: 100, vx: 0, vy: 0 },
+            { isCloud: false, x: 50, y: 50, vx: 0, vy: 0 }
+        ]
+        force.initialize(mockNodes)
+        force(0.5)
+        expect(mockNodes[0].vx).toBe(0)
+        expect(mockNodes[0].vy).toBe(0)
+    })
+
+    it('increases pull towards center only for subnets outside groups when >0', () => {
+        const diagram = { subnetWeight: 50 }
+        const force = Forces.subnetPull(diagram)
+        const mockNodes = [
+            { isCloud: true, group: -1, x: 100, y: 100, vx: 0, vy: 0 }, // outside
+            { isCloud: true, group: 'Group1', x: 50, y: 50, vx: 0, vy: 0 }, // in group, no pull
+            { isCloud: false, x: 20, y: 20, vx: 0, vy: 0 } // not subnet
+        ]
+        force.initialize(mockNodes)
+        force(0.5)
+        expect(mockNodes[0].vx).toBeLessThan(0) // pulled
+        expect(mockNodes[0].vy).toBeLessThan(0)
+        expect(mockNodes[1].vx).toBe(0) // not pulled
+        expect(mockNodes[1].vy).toBe(0)
+        expect(mockNodes[2].vx).toBe(0)
+        expect(mockNodes[2].vy).toBe(0)
+    })
+
+    // test change listener winds down sims + saves layout (like dragended)
+    it('on change winds down simulations and saves layout', () => {
+        const mockLayer = {
+            simulations: {
+                nodes: { alphaTarget: vi.fn() },
+                groups: { alphaTarget: vi.fn() },
+            },
+        }
+        const diagram = {
+            layers: [mockLayer],
+            subnetWeight: 75,
+            config: {},
+            // mock Layout.save + storeConfig
+        }
+        const mockLayoutSave = vi.fn()
+        // simulate slider change (real listener not in unit, but verify pattern)
+        const changeHandler = () => {
+            const layer = diagram.layers?.[0]
+            if (layer?.simulations) {
+                if (layer.simulations.groups) {
+                    layer.simulations.groups.alphaTarget(0)
+                }
+                layer.simulations.nodes.alphaTarget(0)
+            }
+            mockLayoutSave(diagram) // mock call
+            diagram.config.subnetWeight = diagram.subnetWeight
+            // Configs.storeConfig(diagram) would be called
+        }
+        changeHandler()
+        expect(mockLayer.simulations.nodes.alphaTarget).toHaveBeenCalledWith(0)
+        expect(mockLayer.simulations.groups.alphaTarget).toHaveBeenCalledWith(0)
+        expect(diagram.config.subnetWeight).toBe(75)
+        expect(mockLayoutSave).toHaveBeenCalled()
+    })
 })

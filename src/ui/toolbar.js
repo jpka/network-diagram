@@ -74,6 +74,7 @@ function create (diagram) {
     const mode = diagram.config.floatMode || floatModes.floatAll
 
     diagram.settings.floatMode = mode
+    diagram.subnetWeight = diagram.config.subnetWeight ?? 0
 
     toolbar.classList.add('toolbar')
     toolbar.innerHTML += `
@@ -125,6 +126,10 @@ function create (diagram) {
         <div class="button detach">
             <a id="detach">Detach</a>
         </div>
+        <div class="subnet-weight">
+            <label for="subnet-weight">Subnet weight:</label>
+            <input type="range" id="subnet-weight" min="0" max="100" value="${diagram.subnetWeight}" step="1">
+        </div>
         <div class="groupings-toggle" style="display: none">
             <input type="checkbox">
             <label class="label">Grouping</label>
@@ -155,6 +160,27 @@ function create (diagram) {
         // FIXME get rid of global use
         // eslint-disable-next-line no-undef
         openWindow('diagramdetach.html?c=' + diagram.id,1000,600)
+    })
+
+    const weightSlider = toolbar.querySelector('#subnet-weight')
+    weightSlider.addEventListener('input', e => {
+        diagram.subnetWeight = Number.parseInt(e.target.value)
+        const layer = diagram.layers?.[0]
+        if (layer?.simulations?.nodes) {
+            layer.simulations.nodes.alphaTarget(0.7).restart()
+        }
+    })
+    weightSlider.addEventListener('change', () => {
+        const layer = diagram.layers?.[0]
+        if (layer?.simulations) {
+            if (layer.simulations.groups) {
+                layer.simulations.groups.alphaTarget(0)
+            }
+            layer.simulations.nodes.alphaTarget(0)
+        }
+        Layout.save(diagram)
+        diagram.config.subnetWeight = diagram.subnetWeight
+        Configs.storeConfig(diagram)
     })
 
     if (!settings.detachable) {

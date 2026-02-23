@@ -23,6 +23,23 @@ function cluster ({ settings, groups }) {
     return force
 }
 
+function subnetPull (diagram) {
+    let nodes
+    function force (alpha) {
+        const w = diagram.subnetWeight || 0
+        if (w === 0) return
+        const l = alpha * (w / 100) * 0.5
+        for (const d of nodes) {
+            if (d.isCloud && (d.group == null || d.group === -1)) {
+                d.vx -= d.x * l
+                d.vy -= d.y * l
+            }
+        }
+    }
+    force.initialize = _ => nodes = _
+    return force
+}
+
 function rectCollide (diagram) {
     function constant (_) {
         return function () { return _ }
@@ -167,4 +184,5 @@ function rectCollide (diagram) {
 export const Forces = {
     cluster,
     rectCollide,
+    subnetPull,
 }

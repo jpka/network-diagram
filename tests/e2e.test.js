@@ -50,6 +50,11 @@ test('toolbar functionality', async ({ page }) => {
   // Wait for the diagram to load
   await page.waitForSelector('#app .diagram');
 
+  // Check detach and subnet weight slider (to right of it)
+  await expect(page.locator('.button.detach')).toBeVisible();
+  await expect(page.locator('#subnet-weight')).toBeVisible();
+  await expect(page.locator('label[for="subnet-weight"]')).toHaveText('Subnet weight:');
+
   // Wait for Edit button
   await page.waitForSelector('button:has-text("Edit")');
 

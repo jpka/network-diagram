@@ -31,6 +31,7 @@ function create (diagram, layer) {
             }
         }))
         .force('cluster', Forces.cluster(diagram))
+        .force('subnetPull', Forces.subnetPull(diagram))
         .force('charge', d3ForceManyBody().strength(-3000))
         .alpha(1)
         .alphaTarget(0)
@@ -53,6 +54,7 @@ function create_trunked (diagram, layer) {
         .force('y', d3ForceY().strength(d => y(d.displayGroup)).y(0))
         .force('link', d3ForceLink(edges).id(d => d.name).strength(0.01).distance(450))
         .force('charge', d3ForceManyBody().strength(-300)) // Stronger repulsion between nodes
+        .force('subnetPull', Forces.subnetPull(diagram))
         .force('collision', d3ForceCollide().radius(25)) // Prevent node collapse with collision radius
         .velocityDecay(0.5) // Slow down node movement
         .alphaDecay(0.02) // Stop simulation faster after stabilizing

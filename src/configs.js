@@ -13,6 +13,7 @@ function createDefaultConfig (diagram) {
         // Options dialog settings
         sound: true,                    // Sound alerts enabled by default
         hideUnconnectedSubnets: false,  // Don't hide unconnected subnets by default
+        subnetWeight: 0,
     }
 }
 function saveConfig (diagram, config) {
@@ -76,6 +77,9 @@ function storeConfig (diagram) {
     }
     if (updatedConfig.hideUnconnectedSubnets !== undefined) {
         config.hideUnconnectedSubnets = updatedConfig.hideUnconnectedSubnets
+    }
+    if (updatedConfig.subnetWeight !== undefined) {
+        config.subnetWeight = updatedConfig.subnetWeight
     }
 
     if (config !== updatedConfig) {

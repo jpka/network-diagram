@@ -130,6 +130,7 @@ export async function create (id, container, settings = {}) {
         },
         focusedGroupID: -1,
         currentWeight: 1,
+        subnetWeight: 0,
     }
 
     diagram.settings = Object.assign({

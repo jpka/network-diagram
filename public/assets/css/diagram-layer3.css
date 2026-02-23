@@ -288,6 +288,21 @@
   font-size: 11px;
 }
 
+.diagram .subnet-weight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.diagram .subnet-weight label {
+  font-weight: 100;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+.diagram .subnet-weight input {
+  width: 120px;
+}
+
 .diagram .reset {
   float: right;
 }
