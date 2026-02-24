@@ -149,14 +149,13 @@ test('dont show unconnected subnets checkbox filters subnets', async ({ page }) 
 
   // Verify that unconnected subnets are no longer shown in the diagram
   // They should not appear as text labels in the SVG (labels show IP addresses)
-  // Check at least one subnet is hidden (some might still appear due to summarization logic)
-  await expect(page.locator('text', { hasText: '192.168.99.0' })).not.toBeVisible({ timeout: 5000 }).catch(() => {
-    // If not hidden, it might be due to other processing - still consider test successful
-    console.log("Subnet 192.168.99.0 was not hidden - may be due to summarization");
-  });
+  await expect(page.locator('text', { hasText: '192.168.99.0' })).not.toBeVisible({ timeout: 5000 });
+  await expect(page.locator('text', { hasText: '10.99.99.0' })).not.toBeVisible({ timeout: 5000 });
+  //await expect(page.locator('text', { hasText: 'Internet' })).not.toBeVisible({ timeout: 5000 });
+
 
   // Verify that some connected subnets are still visible
-  await expect(page.locator('text', { hasText: 'Internet' }).first()).toBeVisible();
+  await expect(page.locator('text', { hasText: '10.89.112.0' }).first()).toBeVisible();
 });
 
 test('unchecking dont show unconnected subnets checkbox restores subnets', async ({ page }) => {
