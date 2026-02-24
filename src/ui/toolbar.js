@@ -166,6 +166,9 @@ function create (diagram) {
     weightSlider.addEventListener('input', e => {
         diagram.subnetWeight = Number.parseInt(e.target.value)
         const layer = diagram.layers?.[0]
+        if (layer.simulations.groups) {
+            layer.simulations.groups.alphaTarget(0.7).restart()
+        }
         if (layer?.simulations?.nodes) {
             layer.simulations.nodes.alphaTarget(0.7).restart()
         }
