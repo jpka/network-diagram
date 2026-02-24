@@ -402,14 +402,16 @@ function showOptionsModal (diagram) {
                     <div class="title">Options</div>
                 </div>
                 <div class="options-modal-body">
-                    <div>
-                        <input type="checkbox" id="sound_check">
-                        <label for="sound_check" style="margin-bottom: 0; margin-left: 5px;">Sound</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id="hide_unconnected_subnets">
-                        <label for="hide_unconnected_subnets" style="margin-bottom: 0; margin-left: 5px;">Don't show unconnected subnets</label>
-                    </div>
+                    <ul>
+                        <li>
+                            <input type="checkbox" id="sound_check">
+                            <label for="sound_check">Sound</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="hide_unconnected_subnets">
+                            <label for="hide_unconnected_subnets">Don't show unconnected subnets</label>
+                        </li>
+                    </ul>
                 </div>
                 <div class="options-modal-footer">
                     <button class="action options-confirm">Ok</button>

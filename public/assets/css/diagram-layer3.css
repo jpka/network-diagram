@@ -299,8 +299,12 @@
   margin-bottom: 0;
   white-space: nowrap;
 }
+
+
 .diagram .subnet-weight input {
   width: 120px;
+  accent-color: var(--font-anchor,#2196f3);
+  vertical-align: top;
 }
 
 .diagram .reset {
@@ -496,4 +500,14 @@
 .options-modal-container button {
   padding: 5px 10px;
   margin-left: 10px;
+}
+
+.options-modal-body ul {
+  list-style: none;
+  padding: 0;
+  font-size: 16px;
+}
+.options-modal-body label {
+  font-weight: normal;
+  vertical-align: middle;
 }
