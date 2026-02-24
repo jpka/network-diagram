@@ -99,5 +99,34 @@ export default {
         },
         host: '0.0.0.0',
         port: 8080,
+        static: {
+            directory: new URL('./public', import.meta.url).pathname,
+        },
+        // allow adding express-style routes for custom API endpoints
+        setupMiddlewares: (middlewares, devServer) => {
+            if (!devServer || !devServer.app) return middlewares
+
+            const app = devServer.app
+
+            // Generic handler: serve files from ./public/api for requests to /api/*
+            app.get('/api/*', (req, res) => {
+                const reqPath = req.path // e.g. /api/diagramlayer3.json
+                const fileUrl = new URL(`./public${reqPath}`, import.meta.url).pathname
+                res.sendFile(fileUrl, err => {
+                    if (!err) return
+                    // special-case: diagramlayer2.json may have device-specific file names in this repo
+                    if (reqPath.endsWith('/diagramlayer2.json') && req.query) {
+                        const candidate = new URL(`./public/api/diagramlayer2.json?device=${req.query.device}`, import.meta.url).pathname
+                        res.sendFile(candidate, err2 => {
+                            if (err2) res.status(404).json({ error: 'not found' })
+                        })
+                        return
+                    }
+                    res.status(404).json({ error: 'not found' })
+                })
+            })
+
+            return middlewares
+        },
     },
 }
