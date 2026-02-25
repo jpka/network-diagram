@@ -311,7 +311,7 @@ function create (diagram, layer) {
 
                     layer.processing = false
                 } else {
-                    Layers.drillDown.do(diagram, d)
+                    window.location.assign(d.url)
                 }
             }
         })
@@ -328,7 +328,8 @@ function create (diagram, layer) {
                 }, 500)
 
                 layer.processing = false
-            } else if (!d.isCloud) {
+            // if not a summarized subnet, drill down to device or subnet connections
+            } else {
                 Layers.drillDown.do(diagram, d)
                 // window.location.assign(d.url)
             }

@@ -25,102 +25,63 @@ const layerKeys = [
 const layerDomKeys = ['svg', 'groupsContainer', 'layerContainer']
 
 const DrillDown = {
-    apiUrl: 'api/diagramlayer2.json',
+    apiUrl: 'api/diagram',
     async device (diagram, node) {
-        let dataPromise = Data.fetch(`${this.apiUrl}?device=${node.name}`).then(data => ({
-            ...data,
-            devices: [structuredClone(node), ...data.links.map(link => ({
-                name: link.target,
-            }))],
-        }))
-
-        const targetZoom = Math.max(1.5, diagram.transform.k)
-        await Zoom.focusOnNode(diagram, node, targetZoom, 250)
-
-        const layer = await push(node.name, diagram, dataPromise)
-
-        await dataPromise.then(data => {
-            const newNode = findNode(layer, node.name)
-            const radius = Math.max(diagram.dom.svg.node().clientHeight, diagram.dom.svg.node().clientWidth) + 100
-            const separation = ((360 / data.links.length) * Math.PI) / 180
-
-            newNode.x = layer.dom.svg.node().clientWidth / 2
-            newNode.y = layer.dom.svg.node().clientHeight / 2
-            Zoom.focusOnNode(diagram, newNode, targetZoom, 0)
-
-            data.links.forEach((link, i) => {
-                link.source = newNode
-                link.target.x = newNode.x + (Math.cos(separation * i) * radius)
-                link.target.y = newNode.y + (Math.sin(separation * i) * radius)
-            })
-
-            Graphics.update(layer)
-
-            Zoom.restrictArea(layer)
-            layer.zoomBehavior.scaleExtent([targetZoom, diagram.settings.maxZoomIn])
+        const dataPromise = Data.fetch(`${this.apiUrl}/device/${node.name}.json`).then(data => {
+            if (!data.devices.some(d => d.name === node.name)) {
+                data.devices.unshift(structuredClone(node))
+            }
+            return data
         })
-
-        return layer
-    },
-    async subnet (diagram, node) {
-        let dataPromise = Data.fetch(`${this.apiUrl}?subnet=${node.subnet}`).then(data => ({
-            ...data,
-            devices: data.devices.concat(data.links.reduce((missing, { source, target }) => {
-                if (!data.devices.find(({ name }) => source === name)) {
-                    missing.push({ name: source, external: true })
-                } else if (!data.devices.find(({ name }) => target === name)) {
-                    missing.push({ name: target, external: true })
-                }
-                return missing
-            }, [])),
-        }))
-
-        await Zoom.focusOnNode(diagram, node, Math.max(1.5, diagram.transform.k), 250)
-
         const layer = await push(node.name, diagram, dataPromise, {
             delay: 0,
             fadeDuration: 500,
         })
-
-        Simulations.init(diagram)
-        await dataPromise.then(data => {
-            const nodes = data.devices.filter(device => !device.external)
-            const group = Grouping.fromNodes(diagram, nodes)
-            const radius = Math.max(diagram.dom.svg.node().clientHeight, diagram.dom.svg.node().clientWidth) + 100
-            const externalDevices = data.devices.filter(n => n.external)
-            const separation = Math.min(((360 / externalDevices.length) * Math.PI / 180), 0.5)
-
-            externalDevices.forEach((node, i) => {
-                const external = findNode(layer, node.name)
-                const svg = diagram.dom.svg.node()
-
-                external.x = external.fx = group.cx + (Math.cos(separation * i) * radius) + svg.clientWidth
-                external.y = external.fy = group.cy + (Math.sin(separation * i) * radius) + svg.clientHeight
-            })
-            Graphics.update(layer)
-
-            // this waits until the simulation positions the nodes
-            return new Promise(resolve => {
-                setTimeout(async () => {
-                    Grouping.polygonGenerator(diagram, group, nodes)
-                    await Zoom.focusOnArea(diagram, group)
-
-                    Zoom.restrictArea(layer)
-                    layer.zoomBehavior.scaleExtent([layer.transform.k, diagram.settings.maxZoomIn])
-
-                    resolve()
-                }, 500)
-            })
+        Simulations.init(diagram, layer)
+        
+        Graphics.update(layer)
+        console.log('layer', layer)
+        const group = Grouping.fromNodes(diagram, layer.nodes)
+        
+        return new Promise(resolve => {
+            setTimeout(async () => {
+                const newNode = findNode(layer, node.name)
+                console.log('drilldown data', layer)
+                Grouping.polygonGenerator(diagram, group, layer.nodes)
+                console.log('group', group)
+                await Zoom.focusOnNode(diagram, newNode)
+                await Zoom.focusOnArea(diagram, group)
+                resolve(layer)
+            }, 500)
         })
-
-        return layer
+    },
+    async subnet (diagram, node) {
+        const dataPromise = Data.fetch(`${this.apiUrl}/subnet/${node.id}.json`)
+        const layer = await push(node.name, diagram, dataPromise, {
+            delay: 0,
+            fadeDuration: 500,
+        })
+        Simulations.init(diagram, layer)
+        
+        Graphics.update(layer)
+        console.log('layer', layer)
+        const group = Grouping.fromNodes(diagram, layer.nodes)
+        
+        return new Promise(resolve => {
+            setTimeout(async () => {
+                console.log('drilldown data', layer)
+                Grouping.polygonGenerator(diagram, group, layer.nodes)
+                console.log('group', group)
+                await Zoom.focusOnArea(diagram, group)
+                resolve(layer)
+            }, 500)
+        })
     },
     async do (diagram, node) {
         let layer
 
         if (node.isCloud) {
-            layer = await this.subnet(diagram, node) //--SUSPENDED
-            // return
+            layer = await this.subnet(diagram, node)
         } else {
             layer = await this.device(diagram, node)
         }
@@ -277,6 +238,7 @@ async function push (id, diagram, data, { delay, fadeDuration } = { delay: 0, fa
     }
     // then we wait for and parse the data
     Data.process(diagram, layer, graph, first)
+    console.log('processed data', graph, layer)
     layer.dom.groupsContainer = layer.dom.layerContainer.append('g').attr('class', 'groups')
     // then we set the graphics
     Graphics.create(diagram, layer)

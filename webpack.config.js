@@ -2,6 +2,7 @@
 import ESLintPlugin from 'eslint-webpack-plugin'
 import { EsbuildPlugin } from 'esbuild-loader'
 import { URL } from 'url'
+import { readFileSync } from 'fs'
 // import webpack from 'webpack'
 
 // const NODE_ENV = process.env.NODE_ENV || 'production'
@@ -108,14 +109,24 @@ export default {
 
             const app = devServer.app
 
+            app.get('/api/diagram/subnet/:name.json', (req, res) => {
+                const fileUrl = new URL(`./public/api/diagram-subnet-1.json`, import.meta.url).pathname
+                res.sendFile(fileUrl)
+            })
+            app.get('/api/diagram/device/:name.json', (req, res) => {
+                const fileUrl = new URL(`./public/api/diagram-device-1.json`, import.meta.url).pathname
+                // replace Dubonnet device (central one) in mock with the one requested
+                const data = readFileSync(fileUrl, 'utf8')
+                const modifiedData = data.replace(/Dubonnet/g, req.params.name)
+                res.json(JSON.parse(modifiedData))
+            })
             // Generic handler: serve files from ./public/api for requests to /api/*
             app.get('/api/*', (req, res) => {
                 const reqPath = req.path // e.g. /api/diagramlayer3.json
                 const fileUrl = new URL(`./public${reqPath}`, import.meta.url).pathname
                 res.sendFile(fileUrl, err => {
                     if (!err) return
-                    // special-case: diagramlayer2.json may have device-specific file names in this repo
-                    if (reqPath.endsWith('/diagramlayer2.json') && req.query) {
+                    if (reqPath.endsWith('/diagram/subnet.json') && req.query) {
                         const candidate = new URL(`./public/api/diagramlayer2.json?device=${req.query.device}`, import.meta.url).pathname
                         res.sendFile(candidate, err2 => {
                             if (err2) res.status(404).json({ error: 'not found' })

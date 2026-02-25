@@ -59,7 +59,7 @@ function onlyHasOneDev ({ edges }, sub) {
 }
 
 // function process (diagram, layer, graph, first = false) {
-function process (diagram, layer, graph) {
+function process (diagram, layer, graph, first) {
     const { autocompleteItems } = layer
 
     if (!graph.subnets) {
@@ -81,6 +81,7 @@ function process (diagram, layer, graph) {
     // graph.subnets.forEach(subnet => subnet.group = -1);
     const nodes = graph.devices.concat(graph.subnets)
     const edges = removeDuplicatedLinks(graph.links) ?? []
+    console.log('process data', graph, nodes, edges)
     const groups = graph.groups?.map(name => ({
         id: name,
         name: name.split('\\').pop(),
@@ -148,107 +149,116 @@ function process (diagram, layer, graph) {
 
     const config = diagram.config
 
-    const filtered_nodes = nodes?.filter(node => {
-        if (!config.isSet) return true
-        return isNodeVisible(node, config)
-    })
-    const filtered_edges = edges?.filter(edge => {
-        if (!config.isSet) return true
-        return isNodeVisible(edge.source, config) && isNodeVisible(edge.target, config)
-    })
-    const filtered_groups = groups?.filter(group => {
-        if (!config.isSet) return true
-        return config.groups.has(group.id)
-    })
-    // Subnet summarization
-    const new_nodes = []
-    const new_edges = []
-    filtered_nodes.forEach(selectedNode => {
-        const connected_links = filtered_edges.filter(edge => {
-            if (edge.source != selectedNode) return false
-            const connected_subnet = edge.target
-            const linksConnectedtoSubnet = filtered_edges.filter(edge => edge.target == connected_subnet)
-            return linksConnectedtoSubnet.length === 1
+    if (first) {
+        console.log("process data as first")
+        const filtered_nodes = nodes?.filter(node => {
+            if (!config.isSet) return true
+            return isNodeVisible(node, config)
         })
-
-        if (connected_links.length > 1) {
-            const summarized_subnet = {
-                image: 'assets/graphics/summarized-cloud.png',
-                isSummarized: true,
-                name: selectedNode.name + ' - Summarized',
-                // name: `${connected_links.length} Subnets`,
-                subnet: '0.0.0.0',
-                mask: '0.0.0.0',
-                isCloud: true,
-                group: selectedNode.group,
-                totalSubnets: connected_links.length,
-                source: selectedNode,
-            }
-
-            const summarized_edge = {
-                source: selectedNode,
-                target: summarized_subnet,
-                width: 0,
-                bandwidth: 0,
-                warning: 0,
-                isSummarized: true,
-                totalSubnets: connected_links.length,
-            }
-
-            connected_links.forEach(connected_link => {
-                summarized_edge.width += Number.parseInt(connected_link.width)
-                summarized_edge.bandwidth += Number.parseInt(connected_link.bandwidth)
-                filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_link.ipAddress), 1)
-                filtered_nodes.splice(filtered_nodes.findIndex(node => node.subnet == connected_link.target.subnet), 1)
+        const filtered_edges = edges?.filter(edge => {
+            if (!config.isSet) return true
+            return isNodeVisible(edge.source, config) && isNodeVisible(edge.target, config)
+        })
+        const filtered_groups = groups?.filter(group => {
+            if (!config.isSet) return true
+            return config.groups.has(group.id)
+        })
+        // Subnet summarization
+        const new_nodes = []
+        const new_edges = []
+        filtered_nodes.forEach(selectedNode => {
+            const connected_links = filtered_edges.filter(edge => {
+                if (edge.source != selectedNode) return false
+                const connected_subnet = edge.target
+                const linksConnectedtoSubnet = filtered_edges.filter(edge => edge.target == connected_subnet)
+                return linksConnectedtoSubnet.length === 1
             })
-            new_edges.push(summarized_edge)
-            new_nodes.push(summarized_subnet)
-        }
-    })
-    filtered_nodes.push(...new_nodes)
-    filtered_edges.push(...new_edges)
 
-    // Subnet summarization END
+            if (connected_links.length > 1) {
+                const summarized_subnet = {
+                    image: 'assets/graphics/summarized-cloud.png',
+                    isSummarized: true,
+                    name: selectedNode.name + ' - Summarized',
+                    // name: `${connected_links.length} Subnets`,
+                    subnet: '0.0.0.0',
+                    mask: '0.0.0.0',
+                    isCloud: true,
+                    group: selectedNode.group,
+                    totalSubnets: connected_links.length,
+                    source: selectedNode,
+                }
 
-    // Trunk summarization
-    const new_summarzied_edges = []
-    const hiddenSubnets = []
-    filtered_nodes.forEach(selectedNode => {
-        if (selectedNode.isCloud) {
-            const connected_links = filtered_edges.filter(edge => edge.target == selectedNode)
-            if (connected_links.length === 2) {
-                if (connected_links[0].source.group !== connected_links[1].source.group) {
-                    const edgeKey = generateEdgeKey(connected_links[0].source.name, connected_links[1].source.name)
-                    const alreadyExistedEdge = new_summarzied_edges.find(link => link.edgeKey === edgeKey)
-                    if (!alreadyExistedEdge) {
-                        new_summarzied_edges.push({
-                            edgeKey,
-                            source: connected_links[0].source,
-                            target: connected_links[1].source,
-                            isTrunked: true,
-                            name: edgeKey,
-                            totalSubnets: 2,
-                            width: Math.min(connected_links[0].width, connected_links[1].width),
-                        })
-                    } else {
-                        alreadyExistedEdge.width += Math.min(connected_links[0].width, connected_links[1].width)
-                        alreadyExistedEdge.totalSubnets += 2
+                const summarized_edge = {
+                    source: selectedNode,
+                    target: summarized_subnet,
+                    width: 0,
+                    bandwidth: 0,
+                    warning: 0,
+                    isSummarized: true,
+                    totalSubnets: connected_links.length,
+                }
+
+                connected_links.forEach(connected_link => {
+                    summarized_edge.width += Number.parseInt(connected_link.width)
+                    summarized_edge.bandwidth += Number.parseInt(connected_link.bandwidth)
+                    filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_link.ipAddress), 1)
+                    filtered_nodes.splice(filtered_nodes.findIndex(node => node.subnet == connected_link.target.subnet), 1)
+                })
+                new_edges.push(summarized_edge)
+                new_nodes.push(summarized_subnet)
+            }
+        })
+        filtered_nodes.push(...new_nodes)
+        filtered_edges.push(...new_edges)
+
+        // Subnet summarization END
+
+        // Trunk summarization
+        const new_summarzied_edges = []
+        const hiddenSubnets = []
+        filtered_nodes.forEach(selectedNode => {
+            if (selectedNode.isCloud) {
+                const connected_links = filtered_edges.filter(edge => edge.target == selectedNode)
+                if (connected_links.length === 2) {
+                    if (connected_links[0].source.group !== connected_links[1].source.group) {
+                        const edgeKey = generateEdgeKey(connected_links[0].source.name, connected_links[1].source.name)
+                        const alreadyExistedEdge = new_summarzied_edges.find(link => link.edgeKey === edgeKey)
+                        if (!alreadyExistedEdge) {
+                            new_summarzied_edges.push({
+                                edgeKey,
+                                source: connected_links[0].source,
+                                target: connected_links[1].source,
+                                isTrunked: true,
+                                name: edgeKey,
+                                totalSubnets: 2,
+                                width: Math.min(connected_links[0].width, connected_links[1].width),
+                            })
+                        } else {
+                            alreadyExistedEdge.width += Math.min(connected_links[0].width, connected_links[1].width)
+                            alreadyExistedEdge.totalSubnets += 2
+                        }
+                        filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_links[0].ipAddress), 1)
+                        filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_links[1].ipAddress), 1)
+                        hiddenSubnets.push(selectedNode)
+                        // nodes.splice(nodes.findIndex(node => node.subnet == selectedNode.subnet), 1)
                     }
-                    filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_links[0].ipAddress), 1)
-                    filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_links[1].ipAddress), 1)
-                    hiddenSubnets.push(selectedNode)
-                    // nodes.splice(nodes.findIndex(node => node.subnet == selectedNode.subnet), 1)
                 }
             }
-        }
-    })
-    filtered_edges.push(...new_summarzied_edges)
-    hiddenSubnets.forEach(hiddenSubnet => {
-        filtered_nodes.splice(filtered_nodes.findIndex(node => node.subnet === hiddenSubnet.subnet), 1)
-    })
-    layer.nodes = filtered_nodes
-    layer.edges = filtered_edges
-    layer.groups = filtered_groups
+        })
+        filtered_edges.push(...new_summarzied_edges)
+        hiddenSubnets.forEach(hiddenSubnet => {
+            filtered_nodes.splice(filtered_nodes.findIndex(node => node.subnet === hiddenSubnet.subnet), 1)
+        })
+        layer.nodes = filtered_nodes
+        layer.edges = filtered_edges
+        layer.groups = filtered_groups
+    } else {
+        console.log("process data as not first")
+        layer.nodes = nodes
+        layer.edges = edges
+        layer.groups = groups
+    }
+    console.log("after process", { nodes: layer.nodes, edges: layer.edges, groups: layer.groups })
     // Trunk summarization END
 
     diagram.data.unconnectedSubnets = getUnconnectedSubnets(diagram)

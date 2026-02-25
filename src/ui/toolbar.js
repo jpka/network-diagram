@@ -169,16 +169,16 @@ function create (diagram) {
         if (layer.simulations.groups) {
             layer.simulations.groups.alphaTarget(0.7).restart()
         }
-        if (layer?.simulations?.nodes) {
+        if (layer.simulations.nodes) {
             layer.simulations.nodes.alphaTarget(0.7).restart()
         }
     })
     weightSlider.addEventListener('change', () => {
         const layer = diagram.layers?.[0]
-        if (layer?.simulations) {
-            if (layer.simulations.groups) {
-                layer.simulations.groups.alphaTarget(0)
-            }
+        if (layer.simulations.groups) {
+            layer.simulations.groups.alphaTarget(0)
+        }
+        if (layer.simulations.nodes) {
             layer.simulations.nodes.alphaTarget(0)
         }
         Layout.save(diagram)
