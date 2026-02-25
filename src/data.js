@@ -2,6 +2,7 @@
 import { generateEdgeKey, getTextWidth, isNodeVisible, removeDuplicatedLinks } from './utils.js'
 import { Graphics } from './graphics.js'
 import { json as d3Json } from 'd3-fetch'
+import { Configs } from './configs.js'
 
 function fetchData (url) {
     return new Promise((resolve, reject) => {
@@ -41,8 +42,12 @@ function inPubInt (subnet) {
 function onlyHasOneDev ({ edges }, sub) {
     let count = 0
 
-    for (const edge of edges) {
-        if (edge.target === 'Cloud-' + sub) count++
+    try {
+        for (const edge of edges) {
+            if (edge.target === 'Cloud-' + sub) count++
+        }
+    } catch (e) {
+        console.error(e, `edges: ${edges}`)
     }
 
     if (count > 1) {
@@ -245,6 +250,23 @@ function process (diagram, layer, graph) {
     layer.edges = filtered_edges
     layer.groups = filtered_groups
     // Trunk summarization END
+
+    diagram.data.unconnectedSubnets = getUnconnectedSubnets(diagram)
+}
+
+function getUnconnectedSubnets ({ data }) {
+    const unconnectedSubnets = new Set(data.subnets)
+
+    data.edges.forEach(({ source, target }) => {
+        if (unconnectedSubnets.has(source)) {
+            unconnectedSubnets.delete(source)
+        }
+        if (unconnectedSubnets.has(target)) {
+            unconnectedSubnets.delete(target)
+        }
+    }) 
+
+    return unconnectedSubnets
 }
 
 function downScaleBandwidth (val) {

@@ -350,39 +350,39 @@ function init (diagram) {
     })
 }
 
+function initializeConfigData (diagram) {
+    const { config, data } = diagram
+
+    config.devices = new Set(data.devices.map(d => d.id))
+    config.subnets = new Set(data.subnets.map(s => s.id))
+    config.groups = new Set(data.groups.map(g => g.id))
+    config.isSet = true
+
+    Configs.storeConfig(diagram)
+}
+
 function hideUnconnectedSubnets (diagram) {
-    const data = diagram.data
-    const config = diagram.config
+    const {config, data} = diagram
 
-    // Find connected subnets (those with edges to devices)
-    const connectedSubnets = new Set()
-    data.edges.forEach(edge => {
-        const source = edge.source
-        const target = edge.target
-        if (source.isCloud && !target.isCloud) {
-            connectedSubnets.add(source.id)
-        } else if (!source.isCloud && target.isCloud) {
-            connectedSubnets.add(target.id)
-        }
-    })
+    // if the config isn't set we need to initialize it first
+    if (!config.isSet) {
+        initializeConfigData(diagram)
+    }
 
-    // Remove unconnected subnets from config
-    data.subnets.forEach(subnet => {
-        if (!connectedSubnets.has(subnet.id)) {
-            config.subnets.delete(subnet.id)
-        }
+    // Remove unconnected subnets from the config
+    data.unconnectedSubnets.forEach(subnet => {
+        config.subnets.delete(subnet.id)
     })
 
     Configs.storeConfig(diagram)
     Layers.refreshLayer(diagram)
 }
 
-function restoreAllSubnets (diagram) {
-    const data = diagram.data
-    const config = diagram.config
-
+function restoreUnconnectedSubnets (diagram) {
+    const {config, data} = diagram
+    
     // Restore all subnets to the config
-    data.subnets.forEach(subnet => {
+    data.unconnectedSubnets.forEach(subnet => {
         config.subnets.add(subnet.id)
     })
 
@@ -438,7 +438,7 @@ function showOptionsModal (diagram) {
                 hideUnconnectedSubnets(diagram)
             } else {
                 // Restore all subnets when checkbox is unchecked
-                restoreAllSubnets(diagram)
+                restoreUnconnectedSubnets(diagram)
             }
 
             // Persist config to localStorage
@@ -462,7 +462,7 @@ export const Panels = {
     showSettingModal,
     showOptionsModal,
     hideUnconnectedSubnets,
-    restoreAllSubnets,
+    restoreAllSubnets: restoreUnconnectedSubnets,
     remove_group,
     init,
     remove_node,
