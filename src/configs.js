@@ -13,6 +13,7 @@ function createDefaultConfig (diagram) {
         // Options dialog settings
         sound: true,                    // Sound alerts enabled by default
         hideUnconnectedSubnets: false,  // Don't hide unconnected subnets by default
+        subnetSummarization: true,      // Subnet summarization enabled by default
         subnetWeight: 0,
     }
 }
@@ -78,6 +79,9 @@ function storeConfig (diagram) {
     if (updatedConfig.hideUnconnectedSubnets !== undefined) {
         config.hideUnconnectedSubnets = updatedConfig.hideUnconnectedSubnets
     }
+    if (updatedConfig.subnetSummarization !== undefined) {
+        config.subnetSummarization = updatedConfig.subnetSummarization
+    }
     if (updatedConfig.subnetWeight !== undefined) {
         config.subnetWeight = updatedConfig.subnetWeight
     }
@@ -97,6 +101,7 @@ function init (diagram) {
     // Set options settings from config (with defaults if not present)
     diagram.config.sound = diagram.config.sound !== undefined ? diagram.config.sound : true
     diagram.config.hideUnconnectedSubnets = diagram.config.hideUnconnectedSubnets !== undefined ? diagram.config.hideUnconnectedSubnets : false
+    diagram.config.subnetSummarization = diagram.config.subnetSummarization !== undefined ? diagram.config.subnetSummarization : true
 }
 
 function selectConfig (diagram) {

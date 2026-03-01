@@ -164,53 +164,54 @@ function process (diagram, layer, graph, first) {
             return config.groups.has(group.id)
         })
         // Subnet summarization
-        const new_nodes = []
-        const new_edges = []
-        filtered_nodes.forEach(selectedNode => {
-            const connected_links = filtered_edges.filter(edge => {
-                if (edge.source != selectedNode) return false
-                const connected_subnet = edge.target
-                const linksConnectedtoSubnet = filtered_edges.filter(edge => edge.target == connected_subnet)
-                return linksConnectedtoSubnet.length === 1
-            })
-
-            if (connected_links.length > 1) {
-                const summarized_subnet = {
-                    image: 'assets/graphics/summarized-cloud.png',
-                    isSummarized: true,
-                    name: selectedNode.name + ' - Summarized',
-                    // name: `${connected_links.length} Subnets`,
-                    subnet: '0.0.0.0',
-                    mask: '0.0.0.0',
-                    isCloud: true,
-                    group: selectedNode.group,
-                    totalSubnets: connected_links.length,
-                    source: selectedNode,
-                }
-
-                const summarized_edge = {
-                    source: selectedNode,
-                    target: summarized_subnet,
-                    width: 0,
-                    bandwidth: 0,
-                    warning: 0,
-                    isSummarized: true,
-                    totalSubnets: connected_links.length,
-                }
-
-                connected_links.forEach(connected_link => {
-                    summarized_edge.width += Number.parseInt(connected_link.width)
-                    summarized_edge.bandwidth += Number.parseInt(connected_link.bandwidth)
-                    filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_link.ipAddress), 1)
-                    filtered_nodes.splice(filtered_nodes.findIndex(node => node.subnet == connected_link.target.subnet), 1)
+        if (diagram.config.subnetSummarization !== false) {
+            const new_nodes = []
+            const new_edges = []
+            filtered_nodes.forEach(selectedNode => {
+                const connected_links = filtered_edges.filter(edge => {
+                    if (edge.source != selectedNode) return false
+                    const connected_subnet = edge.target
+                    const linksConnectedtoSubnet = filtered_edges.filter(edge => edge.target == connected_subnet)
+                    return linksConnectedtoSubnet.length === 1
                 })
-                new_edges.push(summarized_edge)
-                new_nodes.push(summarized_subnet)
-            }
-        })
-        filtered_nodes.push(...new_nodes)
-        filtered_edges.push(...new_edges)
 
+                if (connected_links.length > 1) {
+                    const summarized_subnet = {
+                        image: 'assets/graphics/summarized-cloud.png',
+                        isSummarized: true,
+                        name: selectedNode.name + ' - Summarized',
+                        // name: `${connected_links.length} Subnets`,
+                        subnet: '0.0.0.0',
+                        mask: '0.0.0.0',
+                        isCloud: true,
+                        group: selectedNode.group,
+                        totalSubnets: connected_links.length,
+                        source: selectedNode,
+                    }
+
+                    const summarized_edge = {
+                        source: selectedNode,
+                        target: summarized_subnet,
+                        width: 0,
+                        bandwidth: 0,
+                        warning: 0,
+                        isSummarized: true,
+                        totalSubnets: connected_links.length,
+                    }
+
+                    connected_links.forEach(connected_link => {
+                        summarized_edge.width += Number.parseInt(connected_link.width)
+                        summarized_edge.bandwidth += Number.parseInt(connected_link.bandwidth)
+                        filtered_edges.splice(filtered_edges.findIndex(edge => edge.ipAddress === connected_link.ipAddress), 1)
+                        filtered_nodes.splice(filtered_nodes.findIndex(node => node.subnet == connected_link.target.subnet), 1)
+                    })
+                    new_edges.push(summarized_edge)
+                    new_nodes.push(summarized_subnet)
+                }
+            })
+            filtered_nodes.push(...new_nodes)
+            filtered_edges.push(...new_edges)
+        }
         // Subnet summarization END
 
         // Trunk summarization
@@ -265,16 +266,19 @@ function process (diagram, layer, graph, first) {
 }
 
 function getUnconnectedSubnets ({ data }) {
+    if (!data || !data.subnets) return new Set()
     const unconnectedSubnets = new Set(data.subnets)
 
-    data.edges.forEach(({ source, target }) => {
-        if (unconnectedSubnets.has(source)) {
-            unconnectedSubnets.delete(source)
-        }
-        if (unconnectedSubnets.has(target)) {
-            unconnectedSubnets.delete(target)
-        }
-    }) 
+    if (data.edges) {
+        data.edges.forEach(({ source, target }) => {
+            if (unconnectedSubnets.has(source)) {
+                unconnectedSubnets.delete(source)
+            }
+            if (unconnectedSubnets.has(target)) {
+                unconnectedSubnets.delete(target)
+            }
+        })
+    }
 
     return unconnectedSubnets
 }

@@ -36,8 +36,10 @@ describe('Panels', () => {
                         { source: { isCloud: false }, target: { isCloud: true, id: 'subnet2' } },
                         // subnet3 has no connections
                     ],
+                    unconnectedSubnets: [{ id: 'subnet3' }],
                 },
                 config: {
+                    isSet: true,
                     subnets: new Set(['subnet1', 'subnet2', 'subnet3']),
                 },
             }
@@ -59,8 +61,10 @@ describe('Panels', () => {
                         { id: 'subnet1' },
                     ],
                     edges: [],
+                    unconnectedSubnets: [{ id: 'subnet1' }],
                 },
                 config: {
+                    isSet: true,
                     subnets: new Set(['subnet1']),
                 },
             }
@@ -76,6 +80,11 @@ describe('Panels', () => {
             const mockDiagram = {
                 data: {
                     subnets: [
+                        { id: 'subnet1' },
+                        { id: 'subnet2' },
+                        { id: 'subnet3' },
+                    ],
+                    unconnectedSubnets: [
                         { id: 'subnet1' },
                         { id: 'subnet2' },
                         { id: 'subnet3' },
@@ -100,6 +109,7 @@ describe('Panels', () => {
             const mockDiagram = {
                 data: {
                     subnets: [],
+                    unconnectedSubnets: [],
                 },
                 config: {
                     subnets: new Set(),

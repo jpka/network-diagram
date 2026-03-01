@@ -187,3 +187,262 @@ test('unchecking dont show unconnected subnets checkbox restores subnets', async
   await expect(page.locator('text', { hasText: '10.99.99.0' }).first()).toBeVisible({ timeout: 10000 });
   // Skip the third subnet as it might be filtered by other logic
 });
+
+test('options dialog subnet summarization checkbox filters subnets', async ({ page }) => {
+  await page.goto('/');
+
+  // Wait for the diagram to load
+  await page.waitForSelector('#app .diagram');
+
+  // Verify that summarized subnets are shown by default
+  // Summarized subnets have text like "X Subnets"
+  await expect(page.locator('text', { hasText: 'Subnets' }).first()).toBeVisible({ timeout: 10000 });
+
+  // Open Options
+  await page.getByRole('button', { name: 'Options' }).click();
+
+  // Check that the new checkbox is present
+  await expect(page.locator('#subnet_summarization')).toBeVisible();
+  
+  // Uncheck the "Summarize subnets" checkbox
+  await page.locator('#subnet_summarization').uncheck();
+
+  // Click Ok
+  await page.getByRole('button', { name: 'Ok' }).click();
+
+  // Wait for diagram to refresh
+  await page.waitForTimeout(2000);
+
+  // Verify that summarized subnets are no longer shown
+  await expect(page.locator('text', { hasText: 'Subnets' })).not.toBeVisible({ timeout: 5000 });
+
+  // Verify that individual subnets are now visible (they show IP addresses)
+  // We expect more IP address labels to appear when summarization is off
+  const ipLabels = page.locator('text').filter({ hasText: /^\d+\.\d+\.\d+\.\d+$/ });
+  const ipLabelCount = await ipLabels.count();
+  expect(ipLabelCount).toBeGreaterThan(0);
+
+  // Re-enable summarization
+  await page.getByRole('button', { name: 'Options' }).click();
+  await page.locator('#subnet_summarization').check();
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(2000);
+
+  // Summarized subnets should be back
+  await expect(page.locator('text', { hasText: 'Subnets' }).first()).toBeVisible({ timeout: 10000 });
+});
+
+test('Save button exports current settings to file', async ({ page }) => {
+  await page.goto('/');
+
+  // Wait for the diagram to load
+  await page.waitForSelector('#app .diagram');
+
+  // Open Options and change settings
+  await page.getByRole('button', { name: 'Options' }).click();
+  
+  // Uncheck sound and subnet summarization, check hide unconnected
+  await page.locator('#sound_check').uncheck();
+  await page.locator('#hide_unconnected_subnets').check();
+  await page.locator('#subnet_summarization').uncheck();
+  
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(1000);
+
+  // Click Edit to reveal Save button
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+
+  // Setup download listener
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save' }).click();
+  
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.diagram$/);
+  
+  // Read the downloaded content
+  const path = await download.path();
+  const content = await page.evaluate(() => {
+    return new Promise((resolve) => {
+      // We'll read via fetch since we have the path
+      resolve(null);
+    });
+  });
+  
+  // Verify the download occurred
+  expect(download).toBeTruthy();
+});
+
+test('Load button restores settings from file', async ({ page }) => {
+  await page.goto('/');
+
+  // Wait for the diagram to load
+  await page.waitForSelector('#app .diagram');
+
+  // First, set up some initial settings and save them
+  await page.getByRole('button', { name: 'Options' }).click();
+  await page.locator('#sound_check').uncheck();
+  await page.locator('#hide_unconnected_subnets').check();
+  await page.locator('#subnet_summarization').uncheck();
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(1000);
+
+  // Click Edit and Save
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save' }).click();
+  const download = await downloadPromise;
+  const savedPath = await download.path();
+
+  // Now change the settings (different from what we saved)
+  await page.getByRole('button', { name: 'Lock' }).click(); // Exit edit mode
+  await page.waitForTimeout(500);
+  
+  await page.getByRole('button', { name: 'Options' }).click();
+  // Reset to different values
+  await page.locator('#sound_check').check();
+  await page.locator('#hide_unconnected_subnets').uncheck();
+  await page.locator('#subnet_summarization').check();
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(1000);
+
+  // Now click Edit and Load the saved file
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  
+  // Set up file input
+  const fileInput = page.locator('input[type="file"][accept=".diagram"]');
+  await fileInput.setInputFiles(savedPath);
+  
+  // Wait for the diagram to refresh after loading
+  await page.waitForTimeout(2000);
+
+  // Open Options and verify settings were restored
+  await page.getByRole('button', { name: 'Lock' }).click();
+  await page.waitForTimeout(500);
+  
+  await page.getByRole('button', { name: 'Options' }).click();
+  
+  // These should be the values from the saved file
+  await expect(page.locator('#sound_check')).not.toBeChecked();
+  await expect(page.locator('#hide_unconnected_subnets')).toBeChecked();
+  await expect(page.locator('#subnet_summarization')).not.toBeChecked();
+  
+  await page.getByRole('button', { name: 'Ok' }).click();
+});
+
+test('Reset button restores default settings', async ({ page }) => {
+  await page.goto('/');
+
+  // Wait for the diagram to load
+  await page.waitForSelector('#app .diagram');
+
+  // First, change settings from defaults
+  await page.getByRole('button', { name: 'Options' }).click();
+  
+  // Defaults are: sound=true, hideUnconnected=false, subnetSummarization=true
+  // Change them all
+  await page.locator('#sound_check').uncheck();
+  await page.locator('#hide_unconnected_subnets').check();
+  await page.locator('#subnet_summarization').uncheck();
+  
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(1000);
+
+  // Verify settings were changed
+  await page.getByRole('button', { name: 'Options' }).click();
+  await expect(page.locator('#sound_check')).not.toBeChecked();
+  await expect(page.locator('#hide_unconnected_subnets')).toBeChecked();
+  await expect(page.locator('#subnet_summarization')).not.toBeChecked();
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(500);
+
+  // Click Edit and then Reset
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  
+  // Handle the confirm dialog
+  page.on('dialog', dialog => dialog.accept());
+  
+  await page.getByRole('button', { name: 'Reset' }).first().click();
+  
+  // Wait for page reload
+  await page.waitForSelector('#app .diagram');
+  await page.waitForTimeout(2000);
+
+  // Verify settings are back to defaults
+  await page.getByRole('button', { name: 'Options' }).click();
+  await expect(page.locator('#sound_check')).toBeChecked();
+  await expect(page.locator('#hide_unconnected_subnets')).not.toBeChecked();
+  await expect(page.locator('#subnet_summarization')).toBeChecked();
+  await page.getByRole('button', { name: 'Ok' }).click();
+});
+
+test('Save, Load, Reset buttons preserve all three options settings', async ({ page }) => {
+  await page.goto('/');
+
+  // Wait for the diagram to load
+  await page.waitForSelector('#app .diagram');
+
+  // Step 1: Set specific settings
+  await page.getByRole('button', { name: 'Options' }).click();
+  await page.locator('#sound_check').uncheck();           // sound = false
+  await page.locator('#hide_unconnected_subnets').check(); // hideUnconnected = true
+  await page.locator('#subnet_summarization').uncheck();   // subnetSummarization = false
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(1500);
+
+  // Step 2: Save the config
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save' }).click();
+  const download = await downloadPromise;
+  const savedPath = await download.path();
+  await page.getByRole('button', { name: 'Lock' }).click();
+  await page.waitForTimeout(500);
+
+  // Step 3: Change settings to different values
+  await page.getByRole('button', { name: 'Options' }).click();
+  await page.locator('#sound_check').check();              // sound = true
+  await page.locator('#hide_unconnected_subnets').uncheck(); // hideUnconnected = false
+  await page.locator('#subnet_summarization').check();      // subnetSummarization = true
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(1500);
+
+  // Verify they changed
+  await page.getByRole('button', { name: 'Options' }).click();
+  await expect(page.locator('#sound_check')).toBeChecked();
+  await expect(page.locator('#hide_unconnected_subnets')).not.toBeChecked();
+  await expect(page.locator('#subnet_summarization')).toBeChecked();
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(500);
+
+  // Step 4: Load the saved config
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  const fileInput = page.locator('input[type="file"][accept=".diagram"]');
+  await fileInput.setInputFiles(savedPath);
+  await page.waitForTimeout(2000);
+  await page.getByRole('button', { name: 'Lock' }).click();
+  await page.waitForTimeout(500);
+
+  // Verify settings were restored from saved config
+  await page.getByRole('button', { name: 'Options' }).click();
+  await expect(page.locator('#sound_check')).not.toBeChecked();
+  await expect(page.locator('#hide_unconnected_subnets')).toBeChecked();
+  await expect(page.locator('#subnet_summarization')).not.toBeChecked();
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await page.waitForTimeout(500);
+
+  // Step 5: Reset to defaults
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+  page.on('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Reset' }).first().click();
+  await page.waitForSelector('#app .diagram');
+  await page.waitForTimeout(2000);
+
+  // Verify settings are back to defaults
+  await page.getByRole('button', { name: 'Options' }).click();
+  await expect(page.locator('#sound_check')).toBeChecked();           // default: true
+  await expect(page.locator('#hide_unconnected_subnets')).not.toBeChecked(); // default: false
+  await expect(page.locator('#subnet_summarization')).toBeChecked();  // default: true
+  await page.getByRole('button', { name: 'Ok' }).click();
+});

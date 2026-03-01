@@ -353,9 +353,9 @@ function init (diagram) {
 function initializeConfigData (diagram) {
     const { config, data } = diagram
 
-    config.devices = new Set(data.devices.map(d => d.id))
-    config.subnets = new Set(data.subnets.map(s => s.id))
-    config.groups = new Set(data.groups.map(g => g.id))
+    config.devices = new Set((data.devices || []).map(d => d.id))
+    config.subnets = new Set((data.subnets || []).map(s => s.id))
+    config.groups = new Set((data.groups || []).map(g => g.id))
     config.isSet = true
 
     Configs.storeConfig(diagram)
@@ -370,9 +370,11 @@ function hideUnconnectedSubnets (diagram) {
     }
 
     // Remove unconnected subnets from the config
-    data.unconnectedSubnets.forEach(subnet => {
-        config.subnets.delete(subnet.id)
-    })
+    if (data.unconnectedSubnets) {
+        data.unconnectedSubnets.forEach(subnet => {
+            config.subnets.delete(subnet.id)
+        })
+    }
 
     Configs.storeConfig(diagram)
     Layers.refreshLayer(diagram)
@@ -382,9 +384,11 @@ function restoreUnconnectedSubnets (diagram) {
     const {config, data} = diagram
     
     // Restore all subnets to the config
-    data.unconnectedSubnets.forEach(subnet => {
-        config.subnets.add(subnet.id)
-    })
+    if (data.unconnectedSubnets) {
+        data.unconnectedSubnets.forEach(subnet => {
+            config.subnets.add(subnet.id)
+        })
+    }
 
     Configs.storeConfig(diagram)
     Layers.refreshLayer(diagram)
@@ -411,6 +415,10 @@ function showOptionsModal (diagram) {
                             <input type="checkbox" id="hide_unconnected_subnets">
                             <label for="hide_unconnected_subnets">Don't show unconnected subnets</label>
                         </li>
+                        <li>
+                            <input type="checkbox" id="subnet_summarization">
+                            <label for="subnet_summarization">Summarize subnets</label>
+                        </li>
                     </ul>
                 </div>
                 <div class="options-modal-footer">
@@ -428,10 +436,15 @@ function showOptionsModal (diagram) {
         confirmBtn.addEventListener('click', () => {
             const soundEnabled = modal.querySelector('#sound_check').checked
             const hideUnconnected = modal.querySelector('#hide_unconnected_subnets').checked
+            const subnetSummarization = modal.querySelector('#subnet_summarization').checked
+
+            // Check if summarization setting changed
+            const summarizationChanged = diagram.config.subnetSummarization !== subnetSummarization
 
             // Update config with current checkbox states
             diagram.config.sound = soundEnabled
             diagram.config.hideUnconnectedSubnets = hideUnconnected
+            diagram.config.subnetSummarization = subnetSummarization
 
             // Apply hide/restore logic based on checkbox
             if (hideUnconnected) {
@@ -444,6 +457,11 @@ function showOptionsModal (diagram) {
             // Persist config to localStorage
             Configs.storeConfig(diagram)
 
+            // Refresh layer if summarization setting changed
+            if (summarizationChanged) {
+                Layers.refreshLayer(diagram)
+            }
+
             modal.close()
         })
     }
@@ -451,9 +469,11 @@ function showOptionsModal (diagram) {
     // Set checkbox states from current config when opening dialog
     const soundCheck = modal.querySelector('#sound_check')
     const hideUnconnectedCheck = modal.querySelector('#hide_unconnected_subnets')
+    const subnetSummarizationCheck = modal.querySelector('#subnet_summarization')
 
     soundCheck.checked = diagram.config.sound !== undefined ? diagram.config.sound : true
     hideUnconnectedCheck.checked = diagram.config.hideUnconnectedSubnets !== undefined ? diagram.config.hideUnconnectedSubnets : false
+    subnetSummarizationCheck.checked = diagram.config.subnetSummarization !== undefined ? diagram.config.subnetSummarization : true
 
     modal.showModal()
 }
