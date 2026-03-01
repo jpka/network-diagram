@@ -40,15 +40,12 @@ const DrillDown = {
         Simulations.init(diagram, layer)
         
         Graphics.update(layer)
-        console.log('layer', layer)
         const group = Grouping.fromNodes(diagram, layer.nodes)
         
         return new Promise(resolve => {
             setTimeout(async () => {
                 const newNode = findNode(layer, node.name)
-                console.log('drilldown data', layer)
                 Grouping.polygonGenerator(diagram, group, layer.nodes)
-                console.log('group', group)
                 await Zoom.focusOnNode(diagram, newNode)
                 await Zoom.focusOnArea(diagram, group)
                 resolve(layer)
@@ -56,23 +53,22 @@ const DrillDown = {
         })
     },
     async subnet (diagram, node) {
-        const dataPromise = Data.fetch(`${this.apiUrl}/subnet/${node.id}.json`)
+        const url = `${this.apiUrl}/subnet/${node.id}.json`
+        const dataPromise = Data.fetch(url)
         const layer = await push(node.name, diagram, dataPromise, {
             delay: 0,
-            fadeDuration: 500,
+            fadeDuration: 0,
         })
         Simulations.init(diagram, layer)
         
         Graphics.update(layer)
-        console.log('layer', layer)
         const group = Grouping.fromNodes(diagram, layer.nodes)
         
         return new Promise(resolve => {
             setTimeout(async () => {
-                console.log('drilldown data', layer)
                 Grouping.polygonGenerator(diagram, group, layer.nodes)
-                console.log('group', group)
                 await Zoom.focusOnArea(diagram, group)
+                layer.interval = setInterval(() => fetchLayerStatus(layer, url), 15000)
                 resolve(layer)
             }, 500)
         })
@@ -88,6 +84,43 @@ const DrillDown = {
 
         layer.processing = false
     },
+}
+
+async function fetchLayerStatus(layer, url) {
+    const data = await Data.fetch(url)
+
+    // set news status values
+    const nodes = data.devices.filter(dev => !dev.image?.includes('cloud.png'))
+    const edges = data.links
+
+    nodes.forEach(node => {
+        if (node.status !== 'offline') return
+        edges.forEach(link => {
+            if (link.DevNum !== node.DevNum) return
+            link.status = node.status
+        })
+    })
+
+    // soundAlert = false
+    
+    nodes.forEach(node => {
+        const item = layer.nodes.find(n => n.DevNum === node.DevNum)
+        if (item) {
+            item.status = node.status
+        }
+    })
+
+    edges.forEach(link => {
+        const item = layer.edges.find(e => e.ipAddress === link.ipAddress)
+        if (item && (item.status !== link.status)) {
+            item.status = link.status
+            // if (item.status === 'down') {
+            //     soundAlert = true
+            // }
+        }
+    })
+
+    Graphics.refreshStatus(layer)
 }
 
 function init (diagram) {
@@ -136,11 +169,12 @@ async function toggle (layer, show, duration = 1000) {
     return new Promise(resolve => setTimeout(resolve, duration))
 }
 
-async function remove (layer) {
+async function remove (layer, duration = 0) {
     if (layer.processing) return
     layer.processing = true
+    clearInterval(layer.interval)
     layer.diagram.layers.splice(layer.diagram.layers.findIndex(l => layer === l), 1)
-    await toggle(layer, false, 0)
+    await toggle(layer, false, duration)
     Object.values(layer.dom).forEach(el => el.remove())
 }
 
@@ -238,7 +272,6 @@ async function push (id, diagram, data, { delay, fadeDuration } = { delay: 0, fa
     }
     // then we wait for and parse the data
     Data.process(diagram, layer, graph, first)
-    console.log('processed data', graph, layer)
     layer.dom.groupsContainer = layer.dom.layerContainer.append('g').attr('class', 'groups')
     // then we set the graphics
     Graphics.create(diagram, layer)

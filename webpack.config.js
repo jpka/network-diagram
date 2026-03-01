@@ -111,7 +111,12 @@ export default {
 
             app.get('/api/diagram/subnet/:name.json', (req, res) => {
                 const fileUrl = new URL(`./public/api/diagram-subnet-1.json`, import.meta.url).pathname
-                res.sendFile(fileUrl)
+                const data = JSON.parse(readFileSync(fileUrl, 'utf8'))
+                data.links.forEach(link => {
+                    //assign one status at random
+                    link.status = ["ok", "issues", "warning", "offline", "down"][Math.floor(Math.random() * 5)];
+                })
+                res.json(data)
             })
             app.get('/api/diagram/device/:name.json', (req, res) => {
                 const fileUrl = new URL(`./public/api/diagram-device-1.json`, import.meta.url).pathname

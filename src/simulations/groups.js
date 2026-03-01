@@ -27,7 +27,7 @@ function create (diagram, layer) {
             return 0.1 * diagram.currentWeight / nodeCount
         }))
         .force('collision', Forces.rectCollide(diagram))
-        .nodes(groups.filter(group => group.parent < 0))
+        .nodes(groups.filter(group => group.parent !== ""))
         .on('tick', () => {
             Grouping.update(diagram, layer)
         })

@@ -110,7 +110,6 @@ async function focusOnArea (diagram, { cx, cy, width, height, title_width }, dur
     const svgEl = dom.svg.node()
     const scale = 0.9 / Math.max(Math.max(width, title_width ?? width) / svgEl.clientWidth, height / svgEl.clientHeight)
 
-    console.log('focusOnArea', { cx, cy, width, height, title_width, scale })
     return focus(diagram, { x: cx, y: cy, scale, duration })
 }
 

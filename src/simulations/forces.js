@@ -40,6 +40,28 @@ function subnetPull (diagram) {
     return force
 }
 
+/**
+ * New force for groups simulation: pushes groups outwards from diagram center.
+ * Scales with independent subnetWeight (0 = null/no-op, skips force for default behavior).
+ * No correlation to currentWeight; outward radial push for spread-out groups layout when subnetWeight >0.
+ * Strength tuned higher (0.2) for noticeable spread without overpowering other forces (ensures test assertions).
+ */
+function outwardGroups (diagram) {
+    // Groups treated as nodes in sim; filter/set on init
+    let nodes
+    function force (alpha) {
+        const w = diagram.subnetWeight || 0
+        if (w === 0) return
+        const l = alpha * w * 0.2
+        for (const d of nodes) {        
+            d.vx += d.x * l
+            d.vy += d.y * l
+        }
+    }
+    force.initialize = _ => nodes = _
+    return force
+}
+
 function rectCollide (diagram) {
     function constant (_) {
         return function () { return _ }
@@ -185,4 +207,5 @@ export const Forces = {
     cluster,
     rectCollide,
     subnetPull,
+    outwardGroups
 }

@@ -580,6 +580,7 @@ export const Graphics = {
     update,
     create,
     fetchStatus,
+    refreshStatus,
     getLinkWidth,
     getFillColor,
     teardown,

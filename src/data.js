@@ -81,7 +81,6 @@ function process (diagram, layer, graph, first) {
     // graph.subnets.forEach(subnet => subnet.group = -1);
     const nodes = graph.devices.concat(graph.subnets)
     const edges = removeDuplicatedLinks(graph.links) ?? []
-    console.log('process data', graph, nodes, edges)
     const groups = graph.groups?.map(name => ({
         id: name,
         name: name.split('\\').pop(),
@@ -150,7 +149,6 @@ function process (diagram, layer, graph, first) {
     const config = diagram.config
 
     if (first) {
-        console.log("process data as first")
         const filtered_nodes = nodes?.filter(node => {
             if (!config.isSet) return true
             return isNodeVisible(node, config)
@@ -254,12 +252,10 @@ function process (diagram, layer, graph, first) {
         layer.edges = filtered_edges
         layer.groups = filtered_groups
     } else {
-        console.log("process data as not first")
         layer.nodes = nodes
         layer.edges = edges
         layer.groups = groups
     }
-    console.log("after process", { nodes: layer.nodes, edges: layer.edges, groups: layer.groups })
     // Trunk summarization END
 
     diagram.data.unconnectedSubnets = getUnconnectedSubnets(diagram)
