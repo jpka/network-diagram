@@ -417,7 +417,7 @@ function showOptionsModal (diagram) {
                         </li>
                         <li>
                             <input type="checkbox" id="subnet_summarization">
-                            <label for="subnet_summarization">Summarize subnets</label>
+                            <label for="subnet_summarization">Aggregate subnets</label>
                         </li>
                     </ul>
                 </div>

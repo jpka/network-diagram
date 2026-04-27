@@ -328,10 +328,9 @@ function create (diagram, layer) {
                 }, 500)
 
                 layer.processing = false
-            // if not a summarized subnet, drill down to device or subnet connections
-            } else {
+            // if not a summarized subnet, or a PC, drill down to device or subnet connections
+            } else if (!d.isPC) {
                 Layers.drillDown.do(diagram, d)
-                // window.location.assign(d.url)
             }
         })
         .on('contextmenu', (event, d) => {
